@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Espejo vocal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F4FA;--surface:#FFFFFF;--ink:#221D3D;--muted:#5F5980;--line:#DDD8EA;
+  --violet:#3F3480;--violet-ink:#F1EEFF;--amber:#E2A436;--on-amber:#2A1F05;--teal:#1F7A70;--on-teal:#FFFFFF;--bad:#C2453A;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16132A;--surface:#201C38;--ink:#ECE9F7;--muted:#A9A3C6;--line:#322D55;
+    --violet:#2C2560;--violet-ink:#F1EEFF;--amber:#F0B755;--on-amber:#2A1F05;--teal:#4FC2B2;--on-teal:#0E2522;--bad:#F07A6E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16132A;--surface:#201C38;--ink:#ECE9F7;--muted:#A9A3C6;--line:#322D55;
+  --violet:#2C2560;--violet-ink:#F1EEFF;--amber:#F0B755;--on-amber:#2A1F05;--teal:#4FC2B2;--on-teal:#0E2522;--bad:#F07A6E;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 56px}
+h1,h2,.display{font-family:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif}
+h1{font-weight:800;font-size:clamp(2.2rem,7vw,3.2rem);line-height:1;letter-spacing:-.025em;margin:0}
+h2{font-size:1.35rem;margin:22px 0 6px;font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:8px 0 18px;max-width:62ch}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+button,label.filebtn{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.filebtn:focus-within{outline:3px solid var(--amber);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.primary{background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:12px 24px;min-height:48px;font-weight:700}
+.primary:disabled{opacity:.5;cursor:default}
+.ghost{background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:11px 20px;min-height:48px;color:var(--ink)}
+.ghost:disabled{opacity:.5;cursor:default}
+.rec{border-color:var(--bad);color:var(--bad)}
+.filebtn{position:relative;display:inline-flex;align-items:center;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:200px}
+.err{color:var(--bad);font-weight:700}
+[hidden]{display:none!important}
+
+.grid{display:grid;gap:18px}
+@media (min-width:900px){.grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}}
+.cam{position:relative;background:#0e0b1f;border-radius:20px;overflow:hidden;aspect-ratio:4/3}
+.cam video,.cam canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.cam video{object-fit:cover}
+.cam .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#cfc9ea;padding:20px}
+.chips{position:absolute;left:10px;top:10px;right:10px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.chip{background:rgba(194,69,58,.92);color:#fff;border-radius:999px;padding:4px 12px;font-weight:700;font-size:.92rem}
+.chip.ok{background:rgba(31,122,112,.9)}
+.hint{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(20,16,42,.82);color:#fff;border-radius:12px;padding:8px 12px;font-size:.92rem}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:5rem;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none}
+
+.stage{background:var(--violet);color:var(--violet-ink);border-radius:20px;padding:16px 18px}
+.key{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.k{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:clamp(2.6rem,9vw,3.8rem);line-height:1;letter-spacing:-.03em}
+.k-lbl{opacity:.75;font-size:.92rem}
+.cents{position:relative;height:30px;margin:12px 0 4px;border-radius:10px;background:rgba(255,255,255,.1)}
+.cents::before{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:2px;background:rgba(255,255,255,.5)}
+.needle{position:absolute;top:4px;bottom:4px;width:6px;border-radius:3px;background:var(--amber);left:50%;transform:translateX(-50%);transition:left .08s linear}
+.needle.ok{background:var(--teal)}
+.cents-lbl{display:flex;justify-content:space-between;font-size:.8rem;opacity:.75}
+#trace{display:block;width:100%;height:150px;border-radius:12px;background:rgba(0,0,0,.18);margin-top:12px}
+
+.meters{list-style:none;margin:6px 0 0;padding:0}
+.meters li{display:grid;grid-template-columns:9.5em 1fr 5.5em;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--teal);border-radius:5px;transition:width .15s}
+.meters li.warn .bar i{background:var(--bad)}
+.meters li .st{text-align:right;color:var(--muted);font-size:.85rem}
+.meters li.warn .st{color:var(--bad);font-weight:700}
+
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:16px;margin-top:16px}
+.panel h2{margin-top:0}
+.vol{display:flex;flex-direction:column;font-size:.88rem;color:var(--muted);min-width:180px}
+input[type=range]{accent-color:var(--amber);min-height:32px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:10px 0 6px}
+.stat .v{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:2rem;line-height:1.05}
+.stat .l{color:var(--muted);font-size:.88rem}
+#tl{display:block;width:100%;height:180px;border-radius:12px;background:#14102a;margin:10px 0 4px;cursor:pointer}
+.findings{list-style:none;margin:0;padding:0}
+.findings li{border-bottom:1.5px solid var(--line);padding:14px 0}
+.findings .t{font-weight:700;font-size:1.05rem}
+.findings .m{color:var(--muted);font-size:.92rem;margin:2px 0 8px}
+.findings .tip{border-left:3px solid var(--amber);padding:6px 12px;background:var(--bg);border-radius:0 8px 8px 0}
+.ex{background:none;border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;min-height:40px;font-size:.92rem;margin-top:8px;color:var(--ink)}
+#play{display:block;width:100%;max-height:420px;border-radius:14px;background:#000;margin-top:10px}
+#play.mirror{transform:scaleX(-1)}
+textarea{width:100%;font:inherit;font-size:.92rem;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px;margin-top:8px}
+a.dl{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:16px;height:8px;border-radius:4px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Espejo vocal</h1>
+    <p class="sub">Canta frente a la cámara: te muestra tu afinación en vivo y te avisa si aparecen tensiones visibles en hombros, cabeza, mandíbula o cara. Coloca la tablet a la altura de tus ojos, a un metro más o menos, para que se vean tu cara y tus hombros.</p>
+    <div class="row">
+      <button class="primary" id="go">Activar cámara y micrófono</button>
+      <button class="ghost" id="cal" disabled>Calibrar postura relajada</button>
+      <button class="ghost" id="sess" disabled>Empezar sesión</button>
+    </div>
+    <p class="err" id="err" aria-live="polite"></p>
+    <p class="muted small" id="vis" aria-live="polite"></p>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="cam" id="cam">
+        <video id="vid" playsinline muted></video>
+        <canvas id="ov"></canvas>
+        <div class="empty" id="empty">La cámara aparecerá aquí cuando la actives.</div>
+        <div class="chips" id="chips"></div>
+        <div class="count" id="count" hidden></div>
+        <div class="hint" id="hint" hidden></div>
+      </div>
+    </div>
+    <div>
+      <div class="stage">
+        <div class="key"><span class="k" id="note">—</span><span class="k-lbl" id="hz"></span><span class="k-lbl" id="sstate"></span></div>
+        <div class="cents"><div class="needle" id="needle"></div></div>
+        <div class="cents-lbl"><span>Bajo</span><span id="cents">Afinado</span><span>Alto</span></div>
+        <canvas id="trace" aria-label="Tu afinación en los últimos segundos"></canvas>
+      </div>
+      <h2>Tensión</h2>
+      <p class="muted small" id="mnote">Calibra primero: quédate relajado y en silencio 4 segundos, como cuando estás listo para cantar.</p>
+      <ul class="meters" id="meters"></ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Pista para cantar (opcional)</h2>
+    <p class="muted small">Sube una pista o la canción para cantar encima. Usa audífonos para que el micrófono escuche solo tu voz.</p>
+    <div class="row">
+      <label class="ghost filebtn">Subir pista<input type="file" id="tfile" accept="audio/*,video/*"></label>
+      <button class="ghost" id="tplay" disabled>Reproducir</button>
+      <label class="vol">Volumen<input type="range" id="tvol" min="0" max="100" value="80"></label>
+      <span class="muted small" id="tname"></span>
+    </div>
+    <audio id="track" preload="auto"></audio>
+  </div>
+
+  <section id="res" hidden>
+    <h2 style="margin-top:30px">Resumen de la sesión</h2>
+    <div class="stats" id="stats"></div>
+    <canvas id="tl" aria-label="Línea de tiempo de la sesión: tu afinación y las tensiones"></canvas>
+    <div class="legend" id="tlleg"></div>
+    <p class="muted small">Toca la línea de tiempo para ver ese momento en el video.</p>
+    <video id="play" class="mirror" controls playsinline></video>
+    <div class="row" style="margin-top:10px">
+      <a class="ghost dl" id="dl" download>Descargar video</a>
+      <button class="ghost" id="mir">Ver sin espejo</button>
+    </div>
+    <h2>Qué mejorar</h2>
+    <ul class="findings" id="find"></ul>
+    <h2>Llévalo a Claude</h2>
+    <p class="muted small">Copia este resumen y pégalo en tu chat con Claude para pedir ejercicios a tu medida.</p>
+    <textarea id="sumtxt" rows="7" readonly></textarea>
+    <div class="row"><button class="ghost" id="copy">Copiar resumen</button><span class="muted small" id="copied" aria-live="polite"></span></div>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NAMES=['Do','Do♯','Re','Mi♭','Mi','Fa','Fa♯','Sol','La♭','La','Si♭','Si'];
+const nn=m=>NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const mmss=s=>{s=Math.max(0,Math.floor(s));return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+const median=a=>{if(!a.length)return null;const b=[...a].sort((x,y)=>x-y);return b[b.length>>1];};
+const pct=v=>Math.round(v*100)+'%';
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const FACE_MODEL='https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const POSE_MODEL='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+const MP='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+
+const TYPES={
+  hombros:{label:'Hombros arriba',color:'#F07A6E',
+    tip:'Respira expandiendo las costillas hacia los lados y la espalda baja, no hacia arriba. Pon las manos en las costillas para sentirlo. Antes de cantar, sube los hombros 3 segundos y suéltalos de golpe, dos o tres veces.'},
+  menton:{label:'Mentón levantado',color:'#F0B755',
+    tip:'Mantén la mirada al frente y el mentón paralelo al piso. Piensa que las notas altas van hacia adelante, no hacia arriba. Practica escalas que suben mirando un punto a la altura de tus ojos, frente al espejo.'},
+  menton_abajo:{label:'Mentón hundido',color:'#C9A0F5',
+    tip:'Hundir el mentón comprime la garganta. Mantén la cabeza alineada sobre la columna, como si un hilo tirara suavemente de tu coronilla.'},
+  inclinada:{label:'Cabeza inclinada',color:'#7FB2F0',
+    tip:'Busca el centro: la cabeza recta sobre los hombros. Inclinarla suele aparecer cuando una nota cuesta; repite esa parte mirándote en el espejo.'},
+  mandibula:{label:'Mandíbula adelantada',color:'#F59E7A',
+    tip:'Deja que la mandíbula caiga hacia abajo y un poco hacia atrás, como en un bostezo suave. Antes de cantar, masajea con círculos los músculos de las mejillas, junto a las orejas.'},
+  frente:{label:'Frente o ceño tensos',color:'#E7D36B',
+    tip:'La tensión en la frente suele ir junto con esfuerzo en la garganta. Suelta la frente y sonríe levemente con los ojos, sobre todo al empezar las notas altas.'},
+  labios:{label:'Labios apretados',color:'#9BD7A8',
+    tip:'Haz trinos de labios ("brrr") para soltarlos y deja que la boca se abra con las vocales en lugar de apretarse.'},
+  ojos:{label:'Ojos apretados',color:'#A8B8F0',
+    tip:'Apretar los ojos es señal de esfuerzo. Mantén la mirada suave y abierta; si pasa en las notas altas, cántalas más livianas, no más fuertes.'}
+};
+const KEYS=Object.keys(TYPES);
+
+const S={stream:null,actx:null,an:null,buf:null,dbuf:null,face:null,pose:null,base:null,cal:null,
+  m:{},since:{},active:new Set(),trace:[],view:57,lastMidi:null,frame:0,lastTs:0,lastVidT:-1,
+  faceSeen:0,shSeen:0,poseLm:null,faceLm:null,sess:null,rec:null,chunks:[],wl:null,raf:0};
+
+/* ---------- pitch (YIN) ---------- */
+function yin(buf,sr){
+  const W=1024,tMin=Math.floor(sr/1050),tMax=Math.min(Math.ceil(sr/62),buf.length-W-2);
+  let rms=0;for(let i=0;i<W;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/W);
+  if(rms<0.01)return -1;
+  if(!S.dbuf||S.dbuf.length<tMax+2)S.dbuf=new Float32Array(tMax+2);
+  const d=S.dbuf;d[0]=1;let run=0;
+  for(let t=1;t<=tMax+1;t++){let s=0;for(let j=0;j<W;j++){const v=buf[j]-buf[j+t];s+=v*v;}run+=s;d[t]=run?s*t/run:1;}
+  let best=-1;
+  for(let t=tMin;t<tMax;t++){if(d[t]<0.15){while(t+1<tMax&&d[t+1]<d[t])t++;best=t;break;}}
+  if(best<0)return -1;
+  let T=best;const a=d[T-1],b=d[T],c=d[T+1],den=a+c-2*b;if(den>0)T+=(a-c)/(2*den);
+  return sr/T;
+}
+
+/* ---------- start ---------- */
+$('go').onclick=async()=>{
+  $('err').textContent='';
+  if(S.stream){stopAll();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    $('err').textContent='Este navegador no permite usar la cámara aquí. Abre el archivo directamente en Chrome (no dentro de otra app).';return;}
+  try{
+    S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){
+    $('err').textContent=e&&e.name==='NotAllowedError'?'No diste permiso para la cámara o el micrófono. Toca el candado junto a la dirección, permite Cámara y Micrófono y vuelve a intentarlo.':'No se pudo abrir la cámara o el micrófono. Revisa que ninguna otra app los esté usando.';return;}
+  const v=$('vid');v.srcObject=S.stream;await v.play().catch(()=>{});
+  $('empty').hidden=true;
+  S.actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(S.actx.state==='suspended')await S.actx.resume();
+  const src=S.actx.createMediaStreamSource(S.stream);S.an=S.actx.createAnalyser();S.an.fftSize=2048;src.connect(S.an);S.buf=new Float32Array(2048);
+  $('go').textContent='Apagar cámara y micrófono';$('sess').disabled=false;
+  renderMeters();loop();loadVision();
+};
+function stopAll(){
+  if(S.sess)endSession();
+  cancelAnimationFrame(S.raf);
+  if(S.stream)S.stream.getTracks().forEach(t=>t.stop());S.stream=null;
+  if(S.actx)S.actx.close().catch(()=>{});S.actx=null;S.an=null;
+  $('vid').srcObject=null;$('empty').hidden=false;$('chips').innerHTML='';$('hint').hidden=true;
+  $('go').textContent='Activar cámara y micrófono';$('cal').disabled=true;$('sess').disabled=true;
+  S.active.clear();S.since={};
+}
+
+/* ---------- vision ---------- */
+async function loadVision(){
+  if(S.face)return onVisionReady();
+  $('vis').textContent='Cargando el análisis de postura… (la primera vez puede tardar, necesita internet)';
+  try{
+    const V=await import(MP+'/vision_bundle.mjs');
+    const fs=await V.FilesetResolver.forVisionTasks(MP+'/wasm');
+    const mk=async(Cls,opts)=>{
+      try{return await Cls.createFromOptions(fs,{...opts,baseOptions:{modelAssetPath:opts.model,delegate:'GPU'}});}
+      catch(e){return await Cls.createFromOptions(fs,{...opts,baseOptions:{modelAssetPath:opts.model,delegate:'CPU'}});}
+    };
+    S.face=await mk(V.FaceLandmarker,{model:FACE_MODEL,outputFaceBlendshapes:true,runningMode:'VIDEO',numFaces:1});
+    try{S.pose=await mk(V.PoseLandmarker,{model:POSE_MODEL,runningMode:'VIDEO',numPoses:1});}catch(e){S.pose=null;}
+    onVisionReady();
+  }catch(e){
+    $('vis').textContent='No se pudo cargar el análisis de postura (necesita internet). El espejo y el afinador funcionan igual: obsérvate mientras cantas.';
+  }
+}
+function onVisionReady(){
+  $('vis').textContent=S.pose?'Análisis de postura listo.':'Análisis de cara listo; no se pudo cargar el de hombros.';
+  $('cal').disabled=false;
+  if(!S.base)setTimeout(()=>{if(!S.base&&!S.cal&&S.stream)startCal();},800);
+}
+
+const bsGet=(cats,name)=>{const c=cats.find(x=>x.categoryName===name);return c?c.score:0;};
+function readVision(now){
+  const v=$('vid');if(!S.face||v.readyState<2)return;
+  if(v.currentTime===S.lastVidT)return;S.lastVidT=v.currentTime;
+  let ts=Math.round(now);if(ts<=S.lastTs)ts=S.lastTs+1;S.lastTs=ts;
+  const m={};
+  try{
+    const fr=S.face.detectForVideo(v,ts);
+    const lm=fr.faceLandmarks&&fr.faceLandmarks[0];
+    S.faceLm=lm||null;
+    if(lm){
+      S.faceSeen=now;
+      const L=lm[33],R=lm[263],N=lm[1],mx=(L.x+R.x)/2,my=(L.y+R.y)/2,ed=Math.hypot(R.x-L.x,R.y-L.y)||1e-3;
+      m.chin=(N.y-my)/ed;
+      m.roll=Math.atan2(R.y-L.y,R.x-L.x)*180/Math.PI;
+      const cats=fr.faceBlendshapes&&fr.faceBlendshapes[0]?fr.faceBlendshapes[0].categories:[];
+      m.jawOpen=bsGet(cats,'jawOpen');m.jawFwd=bsGet(cats,'jawForward');
+      m.brow=Math.max(bsGet(cats,'browDownLeft'),bsGet(cats,'browDownRight'));m.browUp=bsGet(cats,'browInnerUp');
+      m.press=(bsGet(cats,'mouthPressLeft')+bsGet(cats,'mouthPressRight'))/2;
+      m.squint=(bsGet(cats,'eyeSquintLeft')+bsGet(cats,'eyeSquintRight'))/2;
+    }
+    if(S.pose&&(S.frame%2===0)){
+      const pr=S.pose.detectForVideo(v,ts);const p=pr.landmarks&&pr.landmarks[0];
+      S.poseLm=p||null;
+      if(p){const ok=[7,8,11,12].every(i=>p[i]&&(p[i].visibility==null||p[i].visibility>0.5));
+        if(ok){S.shSeen=now;const sw=Math.abs(p[11].x-p[12].x)||1e-3;m.neck=(((p[11].y+p[12].y)/2)-((p[7].y+p[8].y)/2))/sw;}}
+    }else if(S.m.neck!=null&&now-S.shSeen<300)m.neck=S.m.neckRaw;
+  }catch(e){}
+  for(const k in m){
+    if(k==='neck'){S.m.neckRaw=m.neck;}
+    S.m[k]=S.m[k]==null?m[k]:S.m[k]*0.65+m[k]*0.35;
+  }
+  if(m.neck==null&&now-S.shSeen>600)S.m.neck=null;
+  if(!S.faceLm&&now-S.faceSeen>600){['chin','roll','jawOpen','jawFwd','brow','browUp','press','squint'].forEach(k=>S.m[k]=null);}
+}
+
+/* conditions relative to the relaxed baseline: value 0..1+ (1 = at threshold) */
+function severities(){
+  const b=S.base,m=S.m,s={};if(!b)return s;
+  if(m.neck!=null&&b.neck!=null)s.hombros=Math.max(0,(b.neck-m.neck)/(b.neck*0.10));
+  if(m.chin!=null){s.menton=Math.max(0,(b.chin-m.chin)/0.10);s.menton_abajo=Math.max(0,(m.chin-b.chin)/0.14);}
+  if(m.roll!=null){let d=m.roll-b.roll;d=((d+180)%360+360)%360-180;s.inclinada=Math.abs(d)/9;}
+  if(m.jawFwd!=null)s.mandibula=Math.max(0,(m.jawFwd-b.jawFwd)/0.25);
+  if(m.brow!=null)s.frente=Math.max(0,Math.max((m.brow-b.brow)/0.30,(m.browUp-b.browUp)/0.35));
+  if(m.press!=null)s.labios=Math.max(0,(m.press-b.press)/0.30);
+  if(m.squint!=null)s.ojos=Math.max(0,(m.squint-b.squint)/0.35);
+  return s;
+}
+
+/* ---------- calibration ---------- */
+$('cal').onclick=()=>startCal();
+function startCal(){
+  if(!S.face)return;
+  S.cal={t0:performance.now(),samples:[]};S.base=null;S.active.clear();S.since={};
+  $('count').hidden=false;$('mnote').textContent='Calibrando: quédate relajado, en silencio y mirando al frente…';
+}
+function stepCal(now){
+  const c=S.cal;if(!c)return;
+  const left=4-(now-c.t0)/1000;$('count').textContent=Math.max(1,Math.ceil(left));
+  if(S.m.chin!=null)c.samples.push({...S.m});
+  if(left>0)return;
+  S.cal=null;$('count').hidden=true;
+  const sm=c.samples;
+  if(sm.length<15){$('mnote').textContent='No te vi bien durante la calibración. Acomoda la tablet para que se vean tu cara y tus hombros y vuelve a calibrar.';return;}
+  const md=k=>median(sm.map(x=>x[k]).filter(v=>v!=null));
+  S.base={chin:md('chin'),roll:md('roll'),jawFwd:md('jawFwd'),brow:md('brow'),browUp:md('browUp'),press:md('press'),squint:md('squint'),neck:md('neck')};
+  $('mnote').textContent=S.base.neck==null?'Calibrado. No vi bien tus hombros, así que solo se revisan cabeza y cara; aléjate un poco y recalibra para incluirlos.':'Calibrado. Las barras muestran cuánto te alejas de tu postura relajada.';
+}
+
+/* ---------- meters ---------- */
+function renderMeters(){
+  $('meters').innerHTML=KEYS.map(k=>`<li data-k="${k}"><span>${TYPES[k].label}</span><span class="bar"><i></i></span><span class="st">—</span></li>`).join('');
+}
+function updateMeters(sev){
+  document.querySelectorAll('#meters li').forEach(li=>{
+    const k=li.dataset.k,v=sev[k];
+    const on=S.active.has(k);li.classList.toggle('warn',on);
+    li.querySelector('i').style.width=v==null?'0%':Math.min(100,v/1.5*100)+'%';
+    li.querySelector('.st').textContent=!S.base?'calibra':v==null?'no se ve':on?'atención':'bien';
+  });
+}
+
+/* ---------- main loop ---------- */
+function loop(){
+  S.raf=requestAnimationFrame(loop);
+  const now=performance.now();S.frame++;
+  let midi=null;
+  if(S.an&&S.frame%2===0){
+    S.an.getFloatTimeDomainData(S.buf);
+    const f=yin(S.buf,S.actx.sampleRate);
+    if(f>60&&f<1100){
+      midi=69+12*Math.log2(f/440);
+      if(S.lastMidi!=null&&Math.abs(midi-S.lastMidi)<0.6)midi=S.lastMidi*0.6+midi*0.4;
+      S.lastMidi=midi;
+      const r=Math.round(midi),c=Math.round((midi-r)*100);
+      $('note').textContent=nn(r);$('hz').textContent=f.toFixed(1).replace('.',',')+' Hz';
+      const nd=$('needle');nd.style.left=(50+c)+'%';nd.classList.toggle('ok',Math.abs(c)<=10);
+      $('cents').textContent=Math.abs(c)<=10?'Afinado':(c<0?`${c} cents`:`+${c} cents`).replace('-','−');
+    }else S.lastMidi=null;
+    S.trace.push(midi);if(S.trace.length>240)S.trace.shift();
+    drawTrace();
+  }
+  readVision(now);
+  stepCal(now);
+  const sev=severities();
+  KEYS.forEach(k=>{
+    const v=sev[k];
+    if(v!=null&&v>=1){if(S.since[k]==null)S.since[k]=now;if(now-S.since[k]>=400&&!S.active.has(k)){S.active.add(k);onFlag(k,true,now);}}
+    else{delete S.since[k];if(S.active.has(k)&&(v==null||v<0.8)){S.active.delete(k);onFlag(k,false,now);}}
+  });
+  if(S.frame%3===0){updateMeters(sev);drawOverlay();renderChips();framingHint(now);}
+  if(S.sess)logSession(now);
+}
+function renderChips(){
+  const c=$('chips');
+  const html=[...S.active].map(k=>`<span class="chip">${TYPES[k].label}</span>`).join('')||(S.base&&S.faceLm?'<span class="chip ok">Postura relajada</span>':'');
+  if(c.innerHTML!==html)c.innerHTML=html;
+}
+function framingHint(now){
+  const h=$('hint');let t='';
+  if(S.face&&!S.cal){
+    if(now-S.faceSeen>1500)t='No veo tu cara: mírate de frente y revisa la luz.';
+    else if(S.pose&&now-S.shSeen>2500)t='No veo tus hombros: aléjate un poco o baja la tablet.';
+  }
+  h.hidden=!t;if(t&&h.textContent!==t)h.textContent=t;
+}
+function drawOverlay(){
+  const v=$('vid'),c=$('ov');if(!v.videoWidth)return;
+  // match object-fit:cover mapping
+  const cw=c.clientWidth,ch=c.clientHeight;if(!cw)return;
+  if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch;}
+  const g=c.getContext('2d');g.clearRect(0,0,cw,ch);
+  const sc=Math.max(cw/v.videoWidth,ch/v.videoHeight),dw=v.videoWidth*sc,dh=v.videoHeight*sc,ox=(cw-dw)/2,oy=(ch-dh)/2;
+  const P=p=>[ox+p.x*dw,oy+p.y*dh];
+  const ok='#4FC2B2',bad='#F07A6E';
+  g.lineWidth=4;g.lineCap='round';
+  const p=S.poseLm;
+  if(p&&[7,8,11,12].every(i=>p[i])){
+    const col=S.active.has('hombros')?bad:ok;g.strokeStyle=col;
+    const seg=(a,b)=>{const [x1,y1]=P(p[a]),[x2,y2]=P(p[b]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();};
+    seg(11,12);seg(7,11);seg(8,12);
+    [11,12].forEach(i=>{const [x,y]=P(p[i]);g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();});
+  }
+  const f=S.faceLm;
+  if(f){
+    const head=S.active.has('menton')||S.active.has('menton_abajo')||S.active.has('inclinada');
+    g.strokeStyle=head?bad:ok;
+    const [x1,y1]=P(f[33]),[x2,y2]=P(f[263]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+    const [nx,ny]=P(f[1]),[cx,cy]=P(f[152]);
+    g.fillStyle=head?bad:ok;g.beginPath();g.arc(nx,ny,6,0,7);g.fill();
+    g.strokeStyle=S.active.has('mandibula')?bad:'rgba(255,255,255,.7)';g.lineWidth=3;
+    const jaw=[234,93,132,58,172,136,150,149,176,148,152,377,400,378,379,365,397,288,361,323,454];
+    g.beginPath();jaw.forEach((i,j)=>{const [x,y]=P(f[i]);if(!j)g.moveTo(x,y);else g.lineTo(x,y);});g.stroke();
+  }
+}
+function drawTrace(){
+  const c=$('trace'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;if(!w)return;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);}
+  const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  if(S.lastMidi!=null)S.view+=(S.lastMidi-S.view)*0.08;
+  const span=6,y=m=>h/2-(m-S.view)*(h/(2*span));
+  g.font='11px "Atkinson Hyperlegible",system-ui,sans-serif';g.textBaseline='middle';
+  for(let m=Math.floor(S.view-span-1);m<=Math.ceil(S.view+span+1);m++){
+    const nat=!/[♯♭]/.test(NAMES[((m%12)+12)%12]);
+    g.strokeStyle='rgba(255,255,255,'+(nat?.18:.07)+')';g.lineWidth=1;g.beginPath();g.moveTo(40,y(m));g.lineTo(w,y(m));g.stroke();
+    if(nat){g.fillStyle='rgba(255,255,255,.6)';g.fillText(nn(m),6,y(m));}
+  }
+  g.strokeStyle=css('--amber')||'#F0B755';g.lineWidth=3;g.lineJoin='round';g.beginPath();let pen=false;
+  S.trace.forEach((m,i)=>{const x=40+(w-44)*(i/239);if(m==null){pen=false;return;}if(!pen){g.moveTo(x,y(m));pen=true;}else g.lineTo(x,y(m));});
+  g.stroke();
+}
+
+/* ---------- session ---------- */
+$('sess').onclick=()=>{if(S.sess)endSession();else startSession();};
+function pickMime(){
+  const c=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
+  if(!window.MediaRecorder)return null;
+  for(const t of c)if(!MediaRecorder.isTypeSupported||MediaRecorder.isTypeSupported(t))return t;
+  return '';
+}
+function startSession(){
+  if(!S.stream)return;
+  if(!S.base&&S.face){$('err').textContent='';}
+  S.sess={t0:performance.now(),samples:[],events:[],open:{},last:0,wasVoiced:false,lastVoicedMidi:null,lastVoicedT:-9};
+  S.chunks=[];S.rec=null;
+  const mime=pickMime();
+  if(mime!==null){try{S.rec=mime?new MediaRecorder(S.stream,{mimeType:mime}):new MediaRecorder(S.stream);S.rec.ondataavailable=e=>{if(e.data&&e.data.size)S.chunks.push(e.data);};S.rec.start(1000);}catch(e){S.rec=null;}}
+  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{S.wl=l;}).catch(()=>{});}catch(e){}
+  $('sess').textContent='Terminar sesión';$('sess').classList.add('rec');$('res').hidden=true;
+}
+function logSession(now){
+  const s=S.sess,t=(now-s.t0)/1000;if(t-s.last<0.1)return;s.last=t;
+  const midi=S.lastMidi,voiced=midi!=null;
+  let bits=0;KEYS.forEach((k,i)=>{if(S.active.has(k))bits|=1<<i;});
+  s.samples.push({t,m:voiced?Math.round(midi*100)/100:null,b:bits});
+  if(voiced){s.lastVoicedMidi=midi;s.lastVoicedT=t;}
+  if(voiced&&!s.wasVoiced){s.events.forEach(e=>{if(e.k==='hombros'&&!e.voiced&&t-e.t0<=1.5)e.inhale=true;});}
+  s.wasVoiced=voiced;
+  $('sstate').textContent='Grabando '+mmss(t);
+}
+function onFlag(k,on,now){
+  const s=S.sess;if(!s)return;const t=(now-s.t0)/1000;
+  if(on){const voiced=S.lastMidi!=null;const midi=voiced?S.lastMidi:(t-s.lastVoicedT<0.6?s.lastVoicedMidi:null);
+    const e={k,t0:t,t1:null,voiced,midi,inhale:false};s.events.push(e);s.open[k]=e;}
+  else if(s.open[k]){s.open[k].t1=t;delete s.open[k];}
+}
+function endSession(){
+  const s=S.sess;if(!s)return;S.sess=null;
+  const tEnd=(performance.now()-s.t0)/1000;Object.values(s.open).forEach(e=>{e.t1=tEnd;});
+  $('sess').textContent='Empezar sesión';$('sess').classList.remove('rec');$('sstate').textContent='';
+  if(S.wl){S.wl.release().catch(()=>{});S.wl=null;}
+  const r=S.rec;S.rec=null;
+  const finish=()=>summarize(s,tEnd,S.chunks.length?new Blob(S.chunks,{type:(r&&r.mimeType||'video/webm').split(';')[0]}):null);
+  if(r&&r.state!=='inactive'){r.onstop=finish;try{r.stop();}catch(e){finish();}}else finish();
+}
+
+/* ---------- summary ---------- */
+let SUM=null;
+function summarize(s,dur,blob){
+  const sm=s.samples,voiced=sm.filter(x=>x.m!=null),V=voiced.length||1;
+  const mids=voiced.map(x=>x.m).sort((a,b)=>a-b);
+  const lo=mids.length?mids[Math.floor(mids.length*0.05)]:null,hi=mids.length?mids[Math.floor(mids.length*0.95)]:null;
+  const centered=voiced.filter(x=>Math.abs(x.m-Math.round(x.m))<=0.25).length/V;
+  const medAll=median(mids);
+  const res=[];
+  KEYS.forEach((k,i)=>{
+    const evs=s.events.filter(e=>e.k===k);if(!evs.length)return;
+    const fl=sm.filter(x=>x.b&(1<<i)),flV=fl.filter(x=>x.m!=null);
+    const share=flV.length/V,secs=fl.length*0.1;
+    const medF=median(flV.map(x=>x.m)),medO=median(voiced.filter(x=>!(x.b&(1<<i))).map(x=>x.m));
+    const r={k,i,count:evs.length,share,secs,inhale:evs.filter(e=>e.inhale).length,high:false,from:null,evs};
+    if(medF!=null&&medO!=null&&flV.length>=5&&medF>=medO+3){r.high=true;r.from=Math.round(median(flV.map(x=>x.m).sort((a,b)=>a-b).slice(0,Math.max(1,Math.floor(flV.length*0.25)))));}
+    res.push(r);
+  });
+  res.sort((a,b)=>(b.share+b.secs/Math.max(dur,1))-(a.share+a.secs/Math.max(dur,1)));
+  SUM={s,dur,res,lo,hi,centered,voicedShare:voiced.length/Math.max(1,sm.length)};
+  $('stats').innerHTML=[
+    [mmss(dur),'duración'],[pct(SUM.voicedShare),'del tiempo cantando'],
+    [lo!=null?`${nn(Math.round(lo))}–${nn(Math.round(hi))}`:'—','rango usado'],
+    [voiced.length?pct(centered):'—','notas centradas en un semitono'],
+    [String(res.reduce((a,r)=>a+r.count,0)),'avisos de tensión']
+  ].map(([v,l])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  $('tlleg').innerHTML=res.map(r=>`<span><i style="background:${TYPES[r.k].color}"></i>${TYPES[r.k].label}</span>`).join('')+'<span><i style="background:#F0B755;height:3px"></i>Tu voz</span>';
+  const ul=$('find');ul.innerHTML='';
+  if(!S.base)ul.innerHTML='<li><div class="t">Sin calibrar</div><div class="m">No calibraste tu postura relajada, así que no se revisaron tensiones. Calibra antes de la próxima sesión.</div></li>';
+  else if(!res.length)ul.innerHTML='<li><div class="t">No se vieron tensiones</div><div class="m">Durante esta sesión tu postura se mantuvo cerca de la relajada. Sigue así, y prueba con partes más difíciles de la canción.</div></li>';
+  res.forEach(r=>{
+    const li=document.createElement('li');
+    const parts=[`${r.count} ${r.count===1?'vez':'veces'}`];
+    if(r.share>0)parts.push(`${pct(r.share)} del tiempo que cantaste`);
+    if(r.k==='hombros'&&r.inhale)parts.push(`${r.inhale} ${r.inhale===1?'vez':'veces'} justo al tomar aire`);
+    if(r.high&&r.from!=null)parts.push(`sobre todo en notas altas, desde ${nn(r.from)}`);
+    li.innerHTML='<div class="t"></div><div class="m"></div><div class="tip"></div>';
+    li.querySelector('.t').textContent=TYPES[r.k].label;li.querySelector('.m').textContent=parts.join(', ')+'.';
+    li.querySelector('.tip').textContent=TYPES[r.k].tip;
+    const first=r.evs[0];
+    if(blob){const b=document.createElement('button');b.className='ex';b.textContent='Ver la primera vez en el video ('+mmss(first.t0)+')';b.onclick=()=>seek(first.t0-1);li.appendChild(b);}
+    ul.appendChild(li);
+  });
+  const pv=$('play');
+  if(pv.src)URL.revokeObjectURL(pv.src);
+  if(blob){const url=URL.createObjectURL(blob);pv.src=url;pv.hidden=false;const a=$('dl');a.href=url;a.hidden=false;
+    const ext=blob.type.includes('mp4')?'mp4':'webm';a.download=`espejo-vocal-${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.${ext}`;}
+  else{pv.hidden=true;$('dl').hidden=true;}
+  $('sumtxt').value=summaryText();
+  $('res').hidden=false;drawTimeline();
+  $('res').scrollIntoView({block:'start',behavior:'smooth'});
+}
+function summaryText(){
+  const d=SUM;const lines=[`Sesión de canto frente al espejo (${new Date().toLocaleDateString('es',{day:'numeric',month:'long'})}): ${mmss(d.dur)}, cantando el ${pct(d.voicedShare)} del tiempo.`];
+  if(d.lo!=null)lines.push(`Rango usado: ${nn(Math.round(d.lo))} a ${nn(Math.round(d.hi))}. Notas centradas en un semitono: ${pct(d.centered)}.`);
+  if(!S.base)lines.push('No calibré la postura, así que no se midieron tensiones.');
+  else if(!d.res.length)lines.push('No se detectaron tensiones visibles.');
+  else{lines.push('Tensiones detectadas por la cámara:');
+    d.res.forEach(r=>lines.push(`- ${TYPES[r.k].label}: ${r.count} ${r.count===1?'vez':'veces'}`+(r.share>0?`, ${pct(r.share)} del tiempo cantando`:'')+(r.k==='hombros'&&r.inhale?`, ${r.inhale} al tomar aire`:'')+(r.high&&r.from!=null?`, sobre todo en notas altas desde ${nn(r.from)}`:'')+'.'));}
+  lines.push('¿Qué ejercicios me recomiendas para corregir esto?');
+  return lines.join('\n');
+}
+function drawTimeline(){
+  const c=$('tl'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;if(!w||!SUM)return;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);}
+  const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const {s,dur,res}=SUM,X=t=>8+(w-16)*t/Math.max(dur,0.1);
+  const rows=res.length,rowH=10,pitchH=h-16-rows*(rowH+4);
+  const mids=s.samples.filter(x=>x.m!=null).map(x=>x.m);
+  if(mids.length){
+    const lo=Math.min(...mids)-1,hi=Math.max(...mids)+1,Y=m=>8+(pitchH-8)*(1-(m-lo)/Math.max(1,hi-lo));
+    g.font='10px "Atkinson Hyperlegible",system-ui,sans-serif';g.fillStyle='rgba(255,255,255,.55)';g.textBaseline='middle';
+    for(let m=Math.ceil(lo);m<=hi;m++){if(m%12===0||m%12===7){g.fillStyle='rgba(255,255,255,.12)';g.fillRect(8,Y(m),w-16,1);g.fillStyle='rgba(255,255,255,.6)';g.fillText(nn(m),10,Y(m)-6);}}
+    g.strokeStyle='#F0B755';g.lineWidth=2;g.beginPath();let pen=false,prev=-1;
+    s.samples.forEach(x=>{if(x.m==null||x.t-prev>0.35){pen=false;}if(x.m!=null){const px=X(x.t),py=Y(x.m);if(!pen){g.moveTo(px,py);pen=true;}else g.lineTo(px,py);prev=x.t;}});
+    g.stroke();
+  }
+  res.forEach((r,j)=>{
+    const y=pitchH+8+j*(rowH+4);g.fillStyle='rgba(255,255,255,.06)';g.fillRect(8,y,w-16,rowH);
+    g.fillStyle=TYPES[r.k].color;r.evs.forEach(e=>{const x0=X(e.t0),x1=Math.max(x0+3,X(e.t1==null?dur:e.t1));g.fillRect(x0,y,x1-x0,rowH);});
+  });
+  const pv=$('play');if(!pv.hidden&&pv.duration&&isFinite(pv.duration)){const x=X(pv.currentTime);g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();}
+}
+function seek(t){const pv=$('play');if(pv.hidden)return;try{pv.currentTime=Math.max(0,t);}catch(e){}pv.play().catch(()=>{});pv.scrollIntoView({block:'center',behavior:'smooth'});}
+$('tl').addEventListener('click',e=>{if(!SUM)return;const r=e.currentTarget.getBoundingClientRect();seek(((e.clientX-r.left-8)/(r.width-16))*SUM.dur);});
+$('play').addEventListener('timeupdate',drawTimeline);
+$('mir').onclick=()=>{const pv=$('play');pv.classList.toggle('mirror');$('mir').textContent=pv.classList.contains('mirror')?'Ver sin espejo':'Ver como espejo';};
+$('copy').onclick=async()=>{
+  const ta=$('sumtxt');
+  try{await navigator.clipboard.writeText(ta.value);$('copied').textContent='Copiado. Pégalo en tu chat con Claude.';}
+  catch(e){ta.select();try{document.execCommand('copy');$('copied').textContent='Copiado.';}catch(e2){$('copied').textContent='Selecciona el texto y cópialo.';}}
+};
+
+/* ---------- backing track ---------- */
+const tr=$('track');
+$('tfile').addEventListener('click',e=>{e.target.value='';});
+$('tfile').onchange=e=>{const f=e.target.files[0];if(!f)return;if(tr.src)URL.revokeObjectURL(tr.src);tr.src=URL.createObjectURL(f);$('tname').textContent=f.name;$('tplay').disabled=false;$('tplay').textContent='Reproducir';};
+$('tplay').onclick=()=>{if(tr.paused){tr.play().catch(()=>{});}else tr.pause();};
+tr.onplay=()=>{$('tplay').textContent='Pausa';};tr.onpause=()=>{$('tplay').textContent='Reproducir';};
+$('tvol').oninput=e=>{tr.volume=e.target.value/100;};tr.volume=0.8;
+
+window.addEventListener('resize',()=>{drawTimeline();});
+renderMeters();updateMeters({});
+})();
+</script>
+</body>
+</html>
