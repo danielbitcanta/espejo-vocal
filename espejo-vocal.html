@@ -159,9 +159,11 @@ a.dl{color:var(--ink)}
     <p class="muted small">Toca la línea de tiempo para ver ese momento en el video.</p>
     <video id="play" class="mirror" controls playsinline></video>
     <div class="row" style="margin-top:10px">
-      <a class="ghost dl" id="dl" download>Descargar video</a>
+      <button class="ghost" id="dl">Descargar video</button>
+      <button class="ghost" id="share" hidden>Compartir o guardar</button>
       <button class="ghost" id="mir">Ver sin espejo</button>
     </div>
+    <p class="muted small" id="vinfo" aria-live="polite"></p>
     <h2>Qué mejorar</h2>
     <ul class="findings" id="find"></ul>
     <h2>Llévalo a Claude</h2>
@@ -493,7 +495,7 @@ function endSession(){
 }
 
 /* ---------- summary ---------- */
-let SUM=null;
+let SUM=null,VID=null;
 function summarize(s,dur,blob){
   const sm=s.samples,voiced=sm.filter(x=>x.m!=null),V=voiced.length||1;
   const mids=voiced.map(x=>x.m).sort((a,b)=>a-b);
@@ -537,9 +539,15 @@ function summarize(s,dur,blob){
   });
   const pv=$('play');
   if(pv.src)URL.revokeObjectURL(pv.src);
-  if(blob){const url=URL.createObjectURL(blob);pv.src=url;pv.hidden=false;const a=$('dl');a.href=url;a.hidden=false;
-    const ext=blob.type.includes('mp4')?'mp4':'webm';a.download=`espejo-vocal-${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.${ext}`;}
-  else{pv.hidden=true;$('dl').hidden=true;}
+  VID=null;
+  if(blob&&blob.size>1000){
+    const ext=blob.type.includes('mp4')?'mp4':'webm',d=new Date(),pad=n=>String(n).padStart(2,'0');
+    VID={blob,ext,name:`espejo-vocal-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.${ext}`};
+    pv.src=URL.createObjectURL(blob);pv.hidden=false;$('dl').hidden=false;
+    let canShare=false;try{canShare=!!(navigator.canShare&&navigator.canShare({files:[new File([blob],VID.name,{type:blob.type})]}));}catch(e){}
+    $('share').hidden=!canShare;
+    $('vinfo').textContent=`Video de ${(blob.size/1048576).toFixed(1).replace('.',',')} MB. Se guarda como ${VID.name}.`;
+  }else{pv.hidden=true;$('dl').hidden=true;$('share').hidden=true;$('vinfo').textContent='No se pudo grabar el video de esta sesión; el resumen sí quedó.';}
   $('sumtxt').value=summaryText();
   $('res').hidden=false;drawTimeline();
   $('res').scrollIntoView({block:'start',behavior:'smooth'});
@@ -578,6 +586,18 @@ function drawTimeline(){
 function seek(t){const pv=$('play');if(pv.hidden)return;try{pv.currentTime=Math.max(0,t);}catch(e){}pv.play().catch(()=>{});pv.scrollIntoView({block:'center',behavior:'smooth'});}
 $('tl').addEventListener('click',e=>{if(!SUM)return;const r=e.currentTarget.getBoundingClientRect();seek(((e.clientX-r.left-8)/(r.width-16))*SUM.dur);});
 $('play').addEventListener('timeupdate',drawTimeline);
+$('dl').onclick=()=>{
+  if(!VID)return;
+  const url=URL.createObjectURL(VID.blob),a=document.createElement('a');
+  a.href=url;a.download=VID.name;a.style.display='none';document.body.appendChild(a);a.click();
+  setTimeout(()=>{a.remove();URL.revokeObjectURL(url);},60000);
+  $('vinfo').textContent=`Descargando ${VID.name}. Búscalo en la carpeta Descargas. Si no aparece, usa Compartir o guardar.`;
+};
+$('share').onclick=async()=>{
+  if(!VID)return;
+  try{await navigator.share({files:[new File([VID.blob],VID.name,{type:VID.blob.type})],title:'Espejo vocal'});}
+  catch(e){if(e&&e.name!=='AbortError')$('vinfo').textContent='No se pudo compartir el video. Prueba con Descargar video.';}
+};
 $('mir').onclick=()=>{const pv=$('play');pv.classList.toggle('mirror');$('mir').textContent=pv.classList.contains('mirror')?'Ver sin espejo':'Ver como espejo';};
 $('copy').onclick=async()=>{
   const ta=$('sumtxt');
