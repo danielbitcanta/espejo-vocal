@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transcriptor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F4FA;--surface:#FFFFFF;--ink:#221D3D;--muted:#5F5980;--line:#DDD8EA;
+  --violet:#3F3480;--violet-ink:#F1EEFF;--amber:#E2A436;--teal:#1F7A70;--bad:#C2453A;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16132A;--surface:#201C38;--ink:#ECE9F7;--muted:#A9A3C6;--line:#322D55;
+    --violet:#2C2560;--violet-ink:#F1EEFF;--amber:#F0B755;--teal:#4FC2B2;--bad:#F07A6E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16132A;--surface:#201C38;--ink:#ECE9F7;--muted:#A9A3C6;--line:#322D55;
+  --violet:#2C2560;--violet-ink:#F1EEFF;--amber:#F0B755;--teal:#4FC2B2;--bad:#F07A6E;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+h1,h2{font-family:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif}
+h1{font-weight:800;font-size:clamp(2.2rem,7vw,3.2rem);line-height:1;letter-spacing:-.025em;margin:0}
+h2{font-size:1.35rem;margin:28px 0 8px;font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:10px 0 20px;max-width:62ch}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.err{color:var(--bad);font-weight:700}
+[hidden]{display:none!important}
+button,.filebtn{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.filebtn:focus-within,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.primary{background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:12px 24px;min-height:48px;font-weight:700}
+.primary:disabled{opacity:.45;cursor:default}
+.ghost{background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:11px 20px;min-height:48px;color:var(--ink)}
+.ghost:disabled{opacity:.45;cursor:default}
+.rec{border-color:var(--bad);color:var(--bad)}
+.danger{color:var(--bad)}
+.filebtn{position:relative;display:inline-flex;align-items:center;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:200px}
+.panel{background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+.grid2{display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+label.fld{display:flex;flex-direction:column;gap:6px;font-size:.9rem;color:var(--muted)}
+select,input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px}
+.file{font-weight:700;margin:12px 0 0}
+.stage{background:var(--violet);color:var(--violet-ink);border-radius:18px;padding:18px;margin-top:16px}
+.stage .big{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;font-size:2.2rem;line-height:1.1}
+.bar{height:10px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden;margin:12px 0 6px}
+.bar i{display:block;height:100%;width:0;background:var(--amber);border-radius:5px;transition:width .3s}
+.live{margin-top:12px;max-height:180px;overflow:auto;font-size:.95rem;opacity:.92;white-space:pre-wrap}
+.out{white-space:pre-wrap;line-height:1.7}
+.para{margin:0 0 14px}
+.ts{display:inline-block;min-width:4.2em;color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums;margin-right:6px}
+textarea{width:100%;min-height:360px;font:inherit;font-size:1rem;line-height:1.6;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:14px}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1.5px solid var(--line);padding:10px 0}
+.list .t{flex:1;min-width:200px}
+.list .t b{display:block}
+.list .t span{color:var(--muted);font-size:.88rem}
+.ex{background:none;border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;min-height:40px;font-size:.92rem;color:var(--ink)}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:9px 14px;min-height:44px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700}
+.note{border-left:3px solid var(--amber);padding:8px 12px;background:var(--surface);border-radius:0 10px 10px 0;color:var(--muted);font-size:.92rem;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Transcriptor</h1>
+    <p class="sub">Convierte audio en texto dentro de tu dispositivo, con Whisper. El audio no se sube a ninguna parte. Sirve para reuniones, entrevistas, clases o notas de voz.</p>
+  </header>
+
+  <div class="panel">
+    <div class="row">
+      <label class="ghost filebtn">Subir audio o video<input type="file" id="file" accept="audio/*,video/*"></label>
+      <button class="ghost" id="rec">Grabar</button>
+      <span class="muted small" id="recst"></span>
+    </div>
+    <p class="file" id="fname"></p>
+    <div class="grid2" style="margin-top:14px">
+      <label class="fld">Idioma
+        <select id="lang">
+          <option value="spanish">Español</option>
+          <option value="english">Inglés</option>
+          <option value="">Detectar automáticamente</option>
+        </select>
+      </label>
+      <label class="fld">Calidad
+        <select id="model">
+          <option value="onnx-community/whisper-base">Rápida (descarga unos 130 MB la primera vez)</option>
+          <option value="onnx-community/whisper-small">Más precisa (unos 300 MB, más lenta)</option>
+        </select>
+      </label>
+    </div>
+    <label class="fld" style="margin-top:14px">Nombre
+      <input type="text" id="title" placeholder="Ej.: Reunión comité de cambios" autocomplete="off">
+    </label>
+    <div class="row" style="margin-top:16px">
+      <button class="primary" id="go" disabled>Transcribir</button>
+      <button class="ghost" id="stop" hidden>Cancelar</button>
+    </div>
+    <p class="err" id="err" aria-live="polite"></p>
+    <p class="note">La primera vez descarga el modelo de voz; después queda guardado en el navegador y arranca rápido. Mientras transcribe, deja esta pestaña abierta y en primer plano. Como referencia, en una tablet una hora de audio puede tardar un rato largo; para probar, empieza con algo corto.</p>
+  </div>
+
+  <div class="stage" id="stage" hidden>
+    <div class="big" id="pct">0%</div>
+    <div class="bar"><i id="barf"></i></div>
+    <div class="small" id="status" aria-live="polite"></div>
+    <div class="live" id="live"></div>
+  </div>
+
+  <section id="res" hidden>
+    <h2 id="rtitle">Transcripción</h2>
+    <div class="row" style="margin-bottom:12px">
+      <div class="seg" role="group" aria-label="Vista"><button data-v="read" aria-pressed="true">Leer</button><button data-v="edit" aria-pressed="false">Editar</button></div>
+      <label class="muted small row" style="gap:6px"><input type="checkbox" id="showts" checked style="width:20px;height:20px;accent-color:var(--teal)">Mostrar tiempos</label>
+    </div>
+    <div class="panel out" id="read"></div>
+    <textarea id="edit" hidden aria-label="Texto editable de la transcripción"></textarea>
+    <div class="row" style="margin-top:14px">
+      <button class="primary" id="claude">Copiar para Claude</button>
+      <button class="ghost" id="copy">Copiar texto</button>
+      <button class="ghost" id="dltxt">Descargar .txt</button>
+      <button class="ghost" id="dlsrt">Descargar subtítulos .srt</button>
+      <button class="ghost" id="share" hidden>Compartir</button>
+    </div>
+    <p class="muted small" id="msg" aria-live="polite"></p>
+    <p class="note">Revisa nombres propios, siglas y números: Whisper los adivina por el sonido. "Copiar para Claude" agrega una instrucción para que Claude te haga el resumen, las decisiones y las tareas; pégalo en tu chat.</p>
+  </section>
+
+  <section>
+    <h2>Historial</h2>
+    <p class="muted small" id="hnote">Las transcripciones se guardan solo en este navegador.</p>
+    <ul class="list" id="hist"></ul>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const TJS='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2';
+const SR=16000,SEG=120;
+const pad=n=>String(n).padStart(2,'0');
+const hms=s=>{s=Math.max(0,Math.floor(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${pad(m)}:${pad(x)}`:`${m}:${pad(x)}`;};
+const srtT=s=>{s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=Math.floor(s%60),ms=Math.round((s-Math.floor(s))*1000);return `${pad(h)}:${pad(m)}:${pad(x)},${String(ms).padStart(3,'0')}`;};
+const store={
+  get(k,d){try{const v=localStorage.getItem('transcriptor:'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('transcriptor:'+k,JSON.stringify(v));return true;}catch(e){return false;}}
+};
+
+/* ---------- worker ---------- */
+const WORKER=`
+import { pipeline, env } from '${TJS}';
+env.allowLocalModels=false;
+let asr=null,key='';
+async function load(model,progress){
+  const hasGPU=!!(self.navigator&&navigator.gpu&&await navigator.gpu.requestAdapter().catch(()=>null));
+  const tries=hasGPU?[{device:'webgpu',dtype:{encoder_model:'fp32',decoder_model_merged:'q4'}},{device:'wasm',dtype:'q8'}]:[{device:'wasm',dtype:'q8'}];
+  let last;
+  for(const t of tries){
+    try{asr=await pipeline('automatic-speech-recognition',model,{...t,progress_callback:progress});return t.device;}
+    catch(e){last=e;}
+  }
+  throw last;
+}
+self.onmessage=async e=>{
+  const m=e.data;
+  try{
+    if(m.type==='load'){
+      if(asr&&key===m.model){postMessage({type:'ready',device:'cache'});return;}
+      asr=null;
+      const device=await load(m.model,p=>postMessage({type:'progress',p}));
+      key=m.model;postMessage({type:'ready',device});
+    }else if(m.type==='run'){
+      const opts={task:'transcribe',chunk_length_s:30,stride_length_s:5,return_timestamps:true};
+      if(m.lang)opts.language=m.lang;
+      const out=await asr(m.audio,opts);
+      postMessage({type:'result',id:m.id,text:out.text||'',chunks:(out.chunks||[]).map(c=>({t:c.timestamp,text:c.text}))});
+    }
+  }catch(err){postMessage({type:'error',where:m.type,message:String(err&&err.message||err)});}
+};`;
+let worker=null,workerModel='';
+function newWorker(){
+  if(worker)worker.terminate();
+  worker=new Worker(URL.createObjectURL(new Blob([WORKER],{type:'text/javascript'})),{type:'module'});
+  workerModel='';
+}
+function ask(msg,onProgress){
+  return new Promise((res,rej)=>{
+    worker.onmessage=e=>{
+      const d=e.data;
+      if(d.type==='progress'){onProgress&&onProgress(d.p);return;}
+      if(d.type==='error'){rej(new Error(d.message));return;}
+      res(d);
+    };
+    worker.onerror=e=>{rej(new Error(e.message||'worker'));};
+    worker.postMessage(msg,msg.audio?[msg.audio.buffer]:[]);
+  });
+}
+
+/* ---------- input ---------- */
+let SRC=null; // {blob,name}
+function setSource(blob,name){
+  SRC={blob,name};$('fname').textContent=name+(blob.size?` (${(blob.size/1048576).toFixed(1).replace('.',',')} MB)`:'');
+  if(!$('title').value.trim())$('title').value=name.replace(/\.[^.]+$/,'');
+  $('go').disabled=false;$('err').textContent='';
+}
+$('file').addEventListener('click',e=>{e.target.value='';});
+$('file').onchange=e=>{const f=e.target.files[0];if(f)setSource(f,f.name);};
+
+let rec=null,recChunks=[],recT0=0,recIv=0,recStream=null,wl=null;
+$('rec').onclick=async()=>{
+  if(rec){rec.stop();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){$('err').textContent='Este navegador no permite grabar aquí. Graba con la grabadora del celular y sube el archivo.';return;}
+  try{recStream=await navigator.mediaDevices.getUserMedia({audio:true});}
+  catch(e){$('err').textContent='No se pudo usar el micrófono. Toca el candado junto a la dirección y permite el micrófono.';return;}
+  recChunks=[];rec=new MediaRecorder(recStream);
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)recChunks.push(e.data);};
+  rec.onstop=()=>{
+    clearInterval(recIv);recStream.getTracks().forEach(t=>t.stop());releaseWake();
+    const type=(rec.mimeType||'audio/webm').split(';')[0];rec=null;
+    $('rec').textContent='Grabar';$('rec').classList.remove('rec');$('recst').textContent='';
+    if(recChunks.length){const d=new Date();setSource(new Blob(recChunks,{type}),`Grabación ${d.toLocaleDateString('es')} ${pad(d.getHours())}:${pad(d.getMinutes())}`);}
+  };
+  rec.start(1000);recT0=performance.now();grabWake();
+  $('rec').textContent='Detener';$('rec').classList.add('rec');
+  recIv=setInterval(()=>{$('recst').textContent='Grabando '+hms((performance.now()-recT0)/1000);},500);
+};
+function grabWake(){try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{wl=l;}).catch(()=>{});}catch(e){}}
+function releaseWake(){if(wl){wl.release().catch(()=>{});wl=null;}}
+
+/* ---------- audio ---------- */
+async function decodeMono(blob){
+  const ab=await blob.arrayBuffer();
+  let buf;
+  try{const ctx=new AudioContext({sampleRate:SR});buf=await ctx.decodeAudioData(ab.slice(0));ctx.close();}
+  catch(e){
+    const ctx=new AudioContext();const b=await ctx.decodeAudioData(ab);ctx.close();
+    const off=new OfflineAudioContext(1,Math.ceil(b.duration*SR),SR);const s=off.createBufferSource();s.buffer=b;s.connect(off.destination);s.start();
+    buf=await off.startRendering();
+  }
+  const n=buf.length,ch=buf.numberOfChannels;
+  if(ch===1&&buf.sampleRate===SR)return buf.getChannelData(0);
+  const out=new Float32Array(n);
+  for(let c=0;c<ch;c++){const d=buf.getChannelData(c);for(let i=0;i<n;i++)out[i]+=d[i]/ch;}
+  return out;
+}
+function cutPoints(x){
+  const pts=[0],win=Math.round(SR*0.1);
+  let pos=SEG*SR;
+  while(pos<x.length-SR*20){
+    let best=pos,bv=Infinity;
+    for(let c=pos-SR*8;c<=pos+SR*8;c+=win){let s=0;for(let i=c;i<c+win;i++)s+=x[i]*x[i];if(s<bv){bv=s;best=c;}}
+    pts.push(best);pos=best+SEG*SR;
+  }
+  pts.push(x.length);return pts;
+}
+
+/* ---------- run ---------- */
+let running=false,cancelled=false,CUR=null;
+const setP=(p,s)=>{$('pct').textContent=Math.round(p*100)+'%';$('barf').style.width=(p*100).toFixed(1)+'%';if(s!=null)$('status').textContent=s;};
+$('go').onclick=async()=>{
+  if(!SRC||running)return;
+  running=true;cancelled=false;$('err').textContent='';$('go').disabled=true;$('stop').hidden=false;
+  $('stage').hidden=false;$('live').textContent='';$('res').hidden=true;setP(0,'Leyendo el audio…');grabWake();
+  const model=$('model').value,lang=$('lang').value,name=$('title').value.trim()||SRC.name;
+  try{
+    const x=await decodeMono(SRC.blob);const dur=x.length/SR;
+    if(dur<0.5)throw new Error('short');
+    if(!worker)newWorker();
+    if(workerModel!==model){
+      setP(0,'Preparando el modelo de voz…');
+      const files={};
+      const r=await ask({type:'load',model},p=>{
+        if(p.status==='progress'&&p.total){files[p.file]={l:p.loaded,t:p.total};
+          const L=Object.values(files).reduce((a,f)=>a+f.l,0),T=Object.values(files).reduce((a,f)=>a+f.t,0);
+          $('status').textContent=`Descargando el modelo de voz: ${(L/1048576).toFixed(0)} de ${(T/1048576).toFixed(0)} MB (solo la primera vez)`;}
+      });
+      if(cancelled)return;
+      workerModel=model;
+      $('status').textContent=r.device==='webgpu'?'Usando la tarjeta gráfica (más rápido).':'Usando el procesador.';
+    }
+    const pts=cutPoints(x),segs=[];for(let i=0;i<pts.length-1;i++)segs.push([pts[i],pts[i+1]]);
+    const chunks=[];const t0=performance.now();let doneSec=0;
+    for(let i=0;i<segs.length;i++){
+      if(cancelled)return;
+      const [a,b]=segs[i],off=a/SR;
+      const el=(performance.now()-t0)/1000,eta=doneSec>0?el/doneSec*(dur-doneSec):null;
+      setP(doneSec/dur,`Transcribiendo ${hms(off)} de ${hms(dur)}`+(eta!=null?`. Faltan unos ${Math.max(1,Math.round(eta/60))} min`:''));
+      const r=await ask({type:'run',id:i,lang,audio:x.slice(a,b)});
+      if(cancelled)return;
+      const segLen=(b-a)/SR;
+      if(r.chunks.length)r.chunks.forEach(c=>{const s=(c.t&&c.t[0]!=null?c.t[0]:0)+off,e=(c.t&&c.t[1]!=null?c.t[1]:segLen)+off;const tx=(c.text||'').trim();if(tx)chunks.push({s,e:Math.min(e,off+segLen),text:tx});});
+      else if(r.text.trim())chunks.push({s:off,e:off+segLen,text:r.text.trim()});
+      doneSec=b/SR;
+      $('live').textContent=chunks.slice(-12).map(c=>c.text).join(' ');$('live').scrollTop=1e9;
+    }
+    setP(1,'Listo.');
+    const item={id:Date.now().toString(36),name,date:Date.now(),dur,lang,model,chunks:dedupe(chunks)};
+    saveHist(item);show(item);
+  }catch(e){
+    if(!cancelled){
+      const m=String(e&&e.message||e);
+      $('err').textContent=m==='short'?'El audio está vacío o es demasiado corto.':
+        /decode|Unable to decode|EncodingError/i.test(m)?'No se pudo leer ese archivo. Prueba con MP3, M4A, WAV, AAC o un video MP4.':
+        /fetch|network|Failed to load|404/i.test(m)?'No se pudo descargar el modelo de voz. Revisa tu conexión a internet e intenta de nuevo.':
+        /memory|allocation|OOM/i.test(m)?'El dispositivo se quedó sin memoria. Prueba con un audio más corto o con la calidad Rápida.':
+        'No se pudo transcribir: '+m;
+      $('stage').hidden=true;
+    }
+  }finally{running=false;$('go').disabled=!SRC;$('stop').hidden=true;releaseWake();}
+};
+$('stop').onclick=()=>{cancelled=true;newWorker();running=false;$('stage').hidden=true;$('stop').hidden=true;$('go').disabled=!SRC;releaseWake();$('err').textContent='Transcripción cancelada.';};
+function dedupe(ch){const out=[];ch.forEach(c=>{const p=out[out.length-1];if(p&&p.text===c.text&&Math.abs(p.s-c.s)<2)return;out.push(c);});return out;}
+
+/* ---------- output ---------- */
+function paragraphs(ch){
+  const ps=[];let cur=null;
+  ch.forEach(c=>{
+    if(!cur||c.s-cur.e>2.5||cur.parts.length>=6||(cur.text.length>500&&/[.?!]$/.test(cur.text))){cur={s:c.s,e:c.e,parts:[],text:''};ps.push(cur);}
+    cur.parts.push(c);cur.e=c.e;cur.text=(cur.text+' '+c.text).trim();
+  });
+  return ps;
+}
+function plain(item,ts){return paragraphs(item.chunks).map(p=>(ts?`[${hms(p.s)}] `:'')+p.text).join('\n\n');}
+function srt(item){return item.chunks.map((c,i)=>`${i+1}\n${srtT(c.s)} --> ${srtT(Math.max(c.e,c.s+0.5))}\n${c.text}\n`).join('\n');}
+function show(item){
+  CUR=item;$('res').hidden=false;$('stage').hidden=true;
+  $('rtitle').textContent=item.name;
+  renderRead();$('edit').value=item.edited!=null?item.edited:plain(item,$('showts').checked);
+  setView('read');$('msg').textContent='';
+  let can=false;try{can=!!(navigator.canShare&&navigator.canShare({files:[new File(['x'],'a.txt',{type:'text/plain'})]}));}catch(e){}
+  $('share').hidden=!can;
+  $('res').scrollIntoView({block:'start',behavior:'smooth'});
+}
+function renderRead(){
+  const box=$('read');box.innerHTML='';
+  if(CUR.edited!=null){box.textContent=CUR.edited;return;}
+  const ts=$('showts').checked;
+  paragraphs(CUR.chunks).forEach(p=>{const d=document.createElement('p');d.className='para';
+    if(ts){const s=document.createElement('span');s.className='ts';s.textContent=hms(p.s);d.appendChild(s);}
+    d.appendChild(document.createTextNode(p.text));box.appendChild(d);});
+  if(!CUR.chunks.length)box.textContent='No se reconoció voz en este audio.';
+}
+function setView(v){document.querySelectorAll('[data-v]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));$('read').hidden=v!=='read';$('edit').hidden=v!=='edit';}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.v==='read'&&!$('edit').hidden){const t=$('edit').value;if(t!==plain(CUR,$('showts').checked)){CUR.edited=t;updateHist(CUR);}renderRead();}
+  setView(b.dataset.v);
+});
+$('showts').onchange=()=>{if(CUR.edited==null)$('edit').value=plain(CUR,$('showts').checked);renderRead();};
+const curText=()=>!$('edit').hidden?$('edit').value:(CUR.edited!=null?CUR.edited:plain(CUR,$('showts').checked));
+async function copyText(t,ok){
+  try{await navigator.clipboard.writeText(t);$('msg').textContent=ok;}
+  catch(e){const ta=$('edit');setView('edit');ta.value=t;ta.select();try{document.execCommand('copy');$('msg').textContent=ok;}catch(e2){$('msg').textContent='Selecciona el texto y cópialo.';}}
+}
+$('copy').onclick=()=>copyText(curText(),'Texto copiado.');
+$('claude').onclick=()=>{
+  const d=new Date(CUR.date);
+  const head=`Transcripción automática de "${CUR.name}" (${d.toLocaleDateString('es',{day:'numeric',month:'long',year:'numeric'})}, duración ${hms(CUR.dur)}). Puede tener errores en nombres propios, siglas y números.\n\nHazme: 1) un resumen breve, 2) los temas principales, 3) las decisiones tomadas, 4) las tareas con responsable y fecha si se mencionan, 5) los puntos pendientes o dudas.\n\n---\n\n`;
+  copyText(head+curText(),'Copiado. Pégalo en tu chat con Claude.');
+};
+function download(text,ext,type){
+  const name=(CUR.name||'transcripcion').replace(/[\\/:*?"<>|]+/g,'').trim().slice(0,80)||'transcripcion';
+  const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');
+  a.href=url;a.download=`${name}.${ext}`;a.style.display='none';document.body.appendChild(a);a.click();
+  setTimeout(()=>{a.remove();URL.revokeObjectURL(url);},30000);$('msg').textContent=`Descargando ${name}.${ext}. Búscalo en Descargas.`;
+}
+$('dltxt').onclick=()=>download(curText(),'txt','text/plain;charset=utf-8');
+$('dlsrt').onclick=()=>download(srt(CUR),'srt','application/x-subrip;charset=utf-8');
+$('share').onclick=async()=>{
+  try{const name=(CUR.name||'transcripcion').replace(/[\\/:*?"<>|]+/g,'').slice(0,80);await navigator.share({files:[new File([curText()],name+'.txt',{type:'text/plain'})],title:CUR.name});}
+  catch(e){if(e&&e.name!=='AbortError')$('msg').textContent='No se pudo compartir. Usa Descargar .txt.';}
+};
+
+/* ---------- history ---------- */
+function saveHist(item){
+  const h=store.get('hist',[]);h.unshift(item);
+  while(h.length>30)h.pop();
+  while(!store.set('hist',h)&&h.length>1)h.pop();
+  renderHist();
+}
+function updateHist(item){const h=store.get('hist',[]);const i=h.findIndex(x=>x.id===item.id);if(i>=0){h[i]=item;store.set('hist',h);}}
+function renderHist(){
+  const h=store.get('hist',[]),ul=$('hist');ul.innerHTML='';
+  $('hnote').textContent=h.length?'Las transcripciones se guardan solo en este navegador. Descarga las importantes.':'Todavía no hay transcripciones. Se guardan solo en este navegador.';
+  h.forEach(item=>{
+    const li=document.createElement('li'),t=document.createElement('div');t.className='t';
+    const b=document.createElement('b');b.textContent=item.name;
+    const s=document.createElement('span');s.textContent=`${new Date(item.date).toLocaleString('es',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}, ${hms(item.dur)}`;
+    t.append(b,s);
+    const o=document.createElement('button');o.className='ex';o.textContent='Abrir';o.onclick=()=>show(item);
+    const d=document.createElement('button');d.className='ex danger';d.textContent='Eliminar';
+    d.onclick=()=>{if(d.dataset.arm!=='1'){d.dataset.arm='1';d.textContent='Toca otra vez';setTimeout(()=>{if(d.isConnected){d.dataset.arm='';d.textContent='Eliminar';}},4000);return;}
+      store.set('hist',store.get('hist',[]).filter(x=>x.id!==item.id));if(CUR&&CUR.id===item.id){CUR=null;$('res').hidden=true;}renderHist();};
+    li.append(t,o,d);ul.appendChild(li);
+  });
+}
+$('lang').value=store.get('lang','spanish');$('model').value=store.get('model','onnx-community/whisper-base');
+$('lang').onchange=e=>store.set('lang',e.target.value);$('model').onchange=e=>store.set('model',e.target.value);
+renderHist();
+})();
+</script>
+</body>
+</html>
